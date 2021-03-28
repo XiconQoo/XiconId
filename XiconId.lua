@@ -102,16 +102,17 @@ local function parseAura(tooltip, name, rank)
     elseif XiconIdDB.idCache[name] then
         local possibleSpellIDs = ""
         local cacheIndex = 0
-        for spellID,v in pairs(XiconIdDB.idCache[name]) do
-            if cacheIndex == 0 then
-                possibleSpellIDs = possibleSpellIDs .. spellID
-            else
-                possibleSpellIDs = string.find(possibleSpellIDs, "\n$") and possibleSpellIDs .. "       " .. spellID or possibleSpellIDs .. "," .. spellID
-            end
-            cacheIndex = cacheIndex + 1
-            if cacheIndex % 10 == 0 then
+        for spellID, ranks in pairs(XiconIdDB.idCache[name]) do
+            local spell = ranks == "" and spellID or spellID .. "(" .. ranks .. ")"
+            if cacheIndex ~= 0 and cacheIndex % 10 == 0 then
                 possibleSpellIDs = possibleSpellIDs .. ",\n"
             end
+            if cacheIndex == 0 then
+                possibleSpellIDs = possibleSpellIDs .. spell
+            else
+                possibleSpellIDs = string.find(possibleSpellIDs, "\n$") and possibleSpellIDs .. "       " .. spell or possibleSpellIDs .. "," .. spell
+            end
+            cacheIndex = cacheIndex + 1
         end
         tooltip:AddLine("  ")
         tooltip:AddLine(cacheIndex > 1 and "SpellIDs: " .. possibleSpellIDs or "SpellID: " .. possibleSpellIDs)
@@ -215,7 +216,7 @@ function XiconId:ADDON_LOADED(...)
         hooksecurefunc(GameTooltip, "SetSpell", parseSpellOrItem)
 
         ---itemID
-        for k,v in ipairs(methodList["item"]) do
+        for _,v in ipairs(methodList["item"]) do
             hooksecurefunc(GameTooltip, v, parseSpellOrItem)
         end
 
@@ -238,10 +239,9 @@ function XiconId:ADDON_LOADED(...)
 
         --- icon and id cache
         local num = 0;
-        for i,v in pairs(XiconIdDB.idCache) do
+        for _,_ in pairs(XiconIdDB.idCache) do
             num = num + 1;
         end
-        print(num)
         if (num < 15466) then
             XiconId.CreateIconCache()
             --XiconIdDB.iconCache = iconCache
@@ -346,7 +346,7 @@ function XiconId.CreateIconCache(callback)
                 if not(idCache[name]) then
                     idCache[name] = {}
                 end
-                idCache[name][id] = true
+                idCache[name][id] = type(rank) == "string" and string.match(rank, "%d+") and "R" .. string.match(rank, "%d+") or rank
                 misses = 0;
             else
                 misses = misses + 1
