@@ -1,0 +1,8 @@
+## Interface: 20400
+## Title: |cffa0f6aaXiconId|r
+## Notes: Show Spell/Item Ids on Tooltips for TBC 2.4.3
+## Author: XiCoN-Qoo-
+## Version: 1.0.0-Release
+## SavedVariables: XiconIdDB
+
+XiconId.lua
