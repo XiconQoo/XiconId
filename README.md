@@ -15,6 +15,8 @@ XiconIds show spell/item ids on tooltips from various sources:
 
 Limitations for (De)Buffs: Only shows accurate spellIds on spells you have in your spellbook or items in use. For Spells not in your spellbook a result is drawn from a local cache made when you first login with this addon.
 
+For estimate spellIDs a list of spellIDs is beeing shown with a rank (if exists) in brackets. 
+
 ## Screenshot
 
 ![Screenshot](../readme-media/sample.png)
