@@ -88,16 +88,16 @@ local methodList = {
 
 local function parseLink(tooltip, link, str, pattern)
     local ID = string.match(link, pattern)
+    local _, rank = GetSpellInfo(ID)
+    rank = rank and string.find(rank, "%d+") and "(R" .. string.match(rank, "%d+") .. ")" or ""
     tooltip:AddLine("  ")
-    tooltip:AddLine(str .. ID)
+    tooltip:AddLine(str .. ID .. rank)
     tooltip:Show()
 end
 
 local function parseAura(tooltip, name, rank)
     if GetSpellLink(name, rank) or GetSpellLink(name) then
-        tooltip:AddLine("  ")
-        tooltip:AddLine("SpellID: " .. string.match(GetSpellLink(name, rank) or GetSpellLink(name), "spell:(%d+)"))
-        tooltip:Show()
+        parseLink(tooltip, GetSpellLink(name, rank) or GetSpellLink(name), "SpellID: ", "spell:(%d+)")
         return
     elseif XiconIdDB.idCache[name] then
         local possibleSpellIDs = ""
@@ -136,17 +136,16 @@ local function parseSpellOrItem(tooltip, spellId)
     end
     local name, rank = tooltip:GetSpell()
     if rank and GetSpellLink(name, rank) then
-        local spellID = string.match(GetSpellLink(name, rank), "spell:(%d+)")
-        tooltip:AddLine("  ")
-        tooltip:AddLine("SpellID: " .. spellID)
-        tooltip:Show()
+        parseLink(tooltip, GetSpellLink(name, rank), "SpellID: ", "spell:(%d+)")
         return
     end
 
     ---SpellLink
     if spellId and type(spellId) == "string" and  string.match(spellId,"spell.*") then
+        name, rank = GetSpellInfo(spellId)
+        rank = rank and string.find(rank, "%d+") and "(R" .. string.match(rank, "%d+") .. ")" or ""
         tooltip:AddLine("  ")
-        tooltip:AddLine("SpellID: " .. string.match(spellId, "%d+"))
+        tooltip:AddLine("SpellID: " .. spellId .. rank)
         tooltip:Show()
         return
     end
@@ -155,10 +154,7 @@ end
 local function parseTalent(tooltip, tab, id, inspect)
     local name, rank = tooltip:GetSpell()
     if rank and GetSpellLink(name, rank) then
-        local spellID = string.match(GetSpellLink(name, rank), "spell:(%d+)")
-        tooltip:AddLine("  ")
-        tooltip:AddLine("SpellID: " .. spellID)
-        tooltip:Show()
+        parseLink(tooltip, GetSpellLink(name, rank), "SpellID: ", "spell:(%d+)")
         return
     end
     if tab and id then
