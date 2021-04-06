@@ -87,15 +87,29 @@ local methodList = {
 
 ---------------------------------------------------------------------------------------------
 
+local lastChatSent
+local function printId(str)
+    if str ~= lastChatSent then
+        print(str)
+        lastChatSent = str
+    end
+end
+
 local function parseLink(tooltip, link, str, pattern)
     local ID = string.match(link, pattern)
-    local name, rank = GetSpellInfo(ID)
+    local _, rank = GetSpellInfo(ID)
     rank = rank and string.find(rank, "%d+") and "(R" .. string.match(rank, "%d+") .. ")" or ""
     tooltip:AddLine("  ")
     tooltip:AddLine(str .. ID .. rank)
     tooltip:Show()
     if printIds then
-        print(name .. " - " .. ID .. rank)
+        local msg
+        if string.find(str, "Spell") then
+            msg = link .. " - " .. ID .. rank
+        else
+            msg = link .. " - " .. ID
+        end
+        printId(msg)
     end
 end
 
@@ -129,7 +143,13 @@ local function parseAura(tooltip, name, rank)
         tooltip:AddLine(#arr > 1 and "SpellIDs: " .. possibleSpellIDs or "SpellID: " .. possibleSpellIDs)
         tooltip:Show()
         if printIds then
-            print(name .. " - " .. possibleSpellIDs)
+            local msg
+            if #arr == 1 then
+                msg = GetSpellLink(arr[1].spellID) .. " - " .. possibleSpellIDs
+            else
+                msg = name .. " - " .. possibleSpellIDs
+            end
+            printId(msg)
         end
     end
 end
@@ -161,7 +181,7 @@ local function parseSpellOrItem(tooltip, spellId)
         tooltip:AddLine("SpellID: " .. spellId .. rank)
         tooltip:Show()
         if printIds then
-            print(name .. " - " .. spellId .. rank)
+            printId(GetSpellLink(spellId) .. " - " .. spellId .. rank)
         end
         return
     end
