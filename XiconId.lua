@@ -20,6 +20,7 @@ end
 
 ---------------------------------------------------------------------------------------------
 
+local printIds = false
 local idCache = {}
 --local iconCache = {}
 local XiconId = CreateFrame("Frame", "XiconId")
@@ -88,36 +89,48 @@ local methodList = {
 
 local function parseLink(tooltip, link, str, pattern)
     local ID = string.match(link, pattern)
+    local name, rank = GetSpellInfo(ID)
+    rank = rank and string.find(rank, "%d+") and "(R" .. string.match(rank, "%d+") .. ")" or ""
     tooltip:AddLine("  ")
-    tooltip:AddLine(str .. ID)
+    tooltip:AddLine(str .. ID .. rank)
     tooltip:Show()
+    if printIds then
+        print(name .. " - " .. ID .. rank)
+    end
 end
 
 local function parseAura(tooltip, name, rank)
     if GetSpellLink(name, rank) or GetSpellLink(name) then
-        tooltip:AddLine("  ")
-        tooltip:AddLine("SpellID: " .. string.match(GetSpellLink(name, rank) or GetSpellLink(name), "spell:(%d+)"))
-        tooltip:Show()
-        return
+        parseLink(tooltip, GetSpellLink(name, rank) or GetSpellLink(name), "SpellID: ", "spell:(%d+)")
     elseif XiconIdDB.idCache[name] then
         local possibleSpellIDs = ""
-        local cacheIndex = 0
+        local arr = {}
         for spellID, ranks in pairs(XiconIdDB.idCache[name]) do
-            local spell = ranks == "" and spellID or spellID .. "(" .. ranks .. ")"
-            if cacheIndex ~= 0 and cacheIndex % 10 == 0 then
+            tinsert(arr, {spellID = spellID, rank = ranks})
+        end
+        table.sort(arr, function(a, b)
+            if a.rank == b.rank then
+                return a.spellID > b.spellID
+            end
+            return a.rank > b.rank
+        end)
+        for i,val in ipairs(arr) do
+            local spell = val.rank == "" and val.spellID or val.spellID .. "(" .. val.rank .. ")"
+            if i ~= 1 and (i-1) % 10 == 0 then
                 possibleSpellIDs = possibleSpellIDs .. ",\n"
             end
-            if cacheIndex == 0 then
+            if i == 1 then
                 possibleSpellIDs = possibleSpellIDs .. spell
             else
                 possibleSpellIDs = string.find(possibleSpellIDs, "\n$") and possibleSpellIDs .. "       " .. spell or possibleSpellIDs .. "," .. spell
             end
-            cacheIndex = cacheIndex + 1
         end
         tooltip:AddLine("  ")
-        tooltip:AddLine(cacheIndex > 1 and "SpellIDs: " .. possibleSpellIDs or "SpellID: " .. possibleSpellIDs)
+        tooltip:AddLine(#arr > 1 and "SpellIDs: " .. possibleSpellIDs or "SpellID: " .. possibleSpellIDs)
         tooltip:Show()
-        return
+        if printIds then
+            print(name .. " - " .. possibleSpellIDs)
+        end
     end
 end
 
@@ -136,18 +149,20 @@ local function parseSpellOrItem(tooltip, spellId)
     end
     local name, rank = tooltip:GetSpell()
     if rank and GetSpellLink(name, rank) then
-        local spellID = string.match(GetSpellLink(name, rank), "spell:(%d+)")
-        tooltip:AddLine("  ")
-        tooltip:AddLine("SpellID: " .. spellID)
-        tooltip:Show()
+        parseLink(tooltip, GetSpellLink(name, rank), "SpellID: ", "spell:(%d+)")
         return
     end
 
     ---SpellLink
     if spellId and type(spellId) == "string" and  string.match(spellId,"spell.*") then
+        name, rank = GetSpellInfo(spellId)
+        rank = rank and string.find(rank, "%d+") and "(R" .. string.match(rank, "%d+") .. ")" or ""
         tooltip:AddLine("  ")
-        tooltip:AddLine("SpellID: " .. string.match(spellId, "%d+"))
+        tooltip:AddLine("SpellID: " .. spellId .. rank)
         tooltip:Show()
+        if printIds then
+            print(name .. " - " .. spellId .. rank)
+        end
         return
     end
 end
@@ -155,10 +170,7 @@ end
 local function parseTalent(tooltip, tab, id, inspect)
     local name, rank = tooltip:GetSpell()
     if rank and GetSpellLink(name, rank) then
-        local spellID = string.match(GetSpellLink(name, rank), "spell:(%d+)")
-        tooltip:AddLine("  ")
-        tooltip:AddLine("SpellID: " .. spellID)
-        tooltip:Show()
+        parseLink(tooltip, GetSpellLink(name, rank), "SpellID: ", "spell:(%d+)")
         return
     end
     if tab and id then
@@ -247,6 +259,8 @@ function XiconId:ADDON_LOADED(...)
             --XiconIdDB.iconCache = iconCache
             XiconIdDB.idCache = idCache
         end
+        print("loaded")
+        print("Type /xid to toggle print ids to chat when you hover over an icon (disabled by default).")
     end
 end
 
@@ -362,3 +376,24 @@ function XiconId.CreateIconCache(callback)
     local co = coroutine.create(func)
     dynFrame:AddAction(callback, co)
 end
+
+---------------------------------------------------------------------------------------------
+
+-- SLASH COMMAND
+
+---------------------------------------------------------------------------------------------
+
+SLASH_XICONID1 = "/xid";
+
+local function SLASHXICONIDfunc(msg)
+    local _, _, cmd, args = string.find(msg, "%s?(%w+)%s?(.*)")
+    if cmd == nil and printIds then
+        print("print to chat is disabled! enable it with " .. SLASH_XICONID1)
+        printIds = false
+    elseif cmd == nil and not printIds then
+        print("print to chat is enabled! disable it with " .. SLASH_XICONID1)
+        printIds = true
+    end
+end
+
+SlashCmdList["XICONID"] = SLASHXICONIDfunc;
